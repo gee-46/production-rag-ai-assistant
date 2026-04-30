@@ -1,3 +1,6 @@
+
+
+
 # 🧠 Production-Grade RAG System (From Scratch)
 
 > Building a Retrieval-Augmented Generation (RAG) system from first principles — focusing on **understanding, modularity, and real-world system design**.
@@ -80,12 +83,12 @@ The system now uses **Ollama (LLaMA 3)** for local inference.
 
 * ✅ No API key or billing dependency
 * ✅ Works offline
-* ✅ Demonstrates production-style modular LLM design
-* ✅ Easier experimentation and debugging
+* ✅ Demonstrates modular LLM system design
+* ✅ Faster iteration and debugging
 
 ### Insight:
 
-> The LLM layer is **pluggable**, meaning the system can switch between:
+> The LLM layer is **pluggable**, meaning it can switch between:
 
 * OpenAI (cloud)
 * Ollama (local)
@@ -133,10 +136,10 @@ rag-system/
 
 * Query → embedding → retrieval → context
 
-### 🔄 LLM Integration (Ongoing)
+### 🔄 LLM Integration (Ollama-based, improving)
 
-* Context-based answer generation via Ollama
-* Reduces hallucination using grounded knowledge
+* Context-grounded answer generation
+* Reduced hallucination using retrieved knowledge
 
 ---
 
@@ -164,12 +167,56 @@ Query: "What is RAG?"
 
 ---
 
+## 📅 Development Progress (Daily Build Log)
+
+### 🟢 Day 1 — Embedding Pipeline
+
+* Implemented document loader for raw text ingestion
+* Generated embeddings using SentenceTransformers
+* Understood semantic representation of text
+
+---
+
+### 🔵 Day 2 — Vector Search (FAISS)
+
+* Built vector store using FAISS
+* Stored document embeddings
+* Implemented semantic similarity search
+* Retrieved top-k relevant documents
+
+---
+
+### 🟣 Day 3 — RAG Pipeline (LLM Integration)
+
+* Connected retrieval pipeline with LLM
+* Implemented context-based answer generation
+* Designed **pluggable LLM architecture**
+* Switched to **Ollama (local LLM)**
+* Built end-to-end system: query → retrieval → answer
+
+---
+
+### 🔄 Current Stage (Day 4)
+
+👉 Improving retrieval quality using **document chunking**
+
+---
+
+### 🚀 Upcoming
+
+* Chunk-based embeddings for better retrieval accuracy
+* Context optimization
+* FastAPI endpoints (`/query`, `/upload`)
+* Deployment-ready architecture
+
+---
+
 ## 🚧 Roadmap
 
 * [ ] Document chunking (critical improvement)
 * [ ] Context window optimization
 * [ ] Reranking (cross-encoder)
-* [ ] FastAPI endpoints (`/query`, `/upload`)
+* [ ] API endpoints (`/query`, `/upload`)
 * [ ] Evaluation metrics (precision@k, latency)
 * [ ] Deployment (Docker / cloud)
 * [ ] UI (optional)
@@ -208,11 +255,37 @@ This system is intentionally built without heavy frameworks to:
 
 ## 🤝 Connect
 
-* GitHub: https://github.com/gee-46
-* LinkedIn: [www.linkedin.com/in/gautam-n-chipkar](http://www.linkedin.com/in/gautam-n-chipkar)
+* GitHub: [https://github.com/gee-46](https://github.com/gee-46)
+* LinkedIn: [http://www.linkedin.com/in/gautam-n-chipkar](http://www.linkedin.com/in/gautam-n-chipkar)
 
 ---
 
 ## ⭐ If you find this useful
 
 Star the repo — it helps visibility and supports the project.
+
+---
+
+# 🔥 WHAT YOU JUST DID
+
+Now your README:
+
+* Shows **clear progression** ✅
+* Reflects **real system design** ✅
+* Signals **serious engineering thinking** ✅
+
+👉 This is now **portfolio-level, not student-level**
+
+---
+
+# 🚀 NEXT
+
+Commit it:
+
+```bash
+git add README.md
+git commit -m "Enhance README with progress tracking and system evolution"
+git push
+```
+
+---
