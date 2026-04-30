@@ -1,0 +1,60 @@
+RAG (Retrieval-Augmented Generation) is a technique that enhances large language models by providing external knowledge during inference.
+
+Instead of relying only on pre-trained knowledge, a RAG system retrieves relevant documents from a knowledge base and uses them as context to generate more accurate and up-to-date responses.
+
+Core Components of a RAG System:
+
+1. Document Loader:
+This component loads raw data from sources such as text files, PDFs, websites, or databases.
+
+2. Text Splitter:
+Large documents are divided into smaller chunks to improve retrieval accuracy. Chunk size and overlap are important parameters.
+
+3. Embedding Model:
+Each chunk is converted into a vector representation using embedding models such as OpenAI embeddings or Sentence Transformers.
+
+4. Vector Database:
+Embeddings are stored in a vector database like FAISS, Pinecone, or Chroma for efficient similarity search.
+
+5. Retriever:
+Given a user query, the system finds the most relevant chunks using similarity search.
+
+6. Generator (LLM):
+The retrieved context is passed to a language model which generates a final response.
+
+Workflow of RAG:
+
+- User submits a query
+- Query is converted into an embedding
+- Vector database retrieves similar chunks
+- Retrieved chunks are passed to the LLM
+- LLM generates a response grounded in retrieved data
+
+Advantages of RAG:
+
+- Reduces hallucinations
+- Enables domain-specific knowledge
+- Keeps information up-to-date without retraining
+- Improves factual accuracy
+
+Challenges:
+
+- Poor chunking can reduce accuracy
+- Irrelevant retrieval can mislead the model
+- Latency increases due to retrieval step
+- Requires good embedding quality
+
+Applications:
+
+- Chatbots with custom knowledge
+- Document question answering
+- Customer support automation
+- Enterprise search systems
+
+Best Practices:
+
+- Use semantic chunking instead of fixed-size chunks
+- Keep chunk size between 200–500 tokens
+- Add metadata for better filtering
+- Use hybrid search (keyword + vector)
+- Re-rank retrieved results if possible
