@@ -13,19 +13,3 @@ embeddings = [get_embedding(doc[:200]) for doc in docs]
 vector_store = VectorStore(dim=len(embeddings[0]))
 vector_store.add(embeddings, docs)
 
-# Query
-query = "What is RAG?"
-
-query_embedding = get_embedding(query)
-
-# Retrieve
-results = vector_store.search(query_embedding, k=2)
-
-# Build context
-context = "\n\n".join(results)
-
-# Generate answer
-answer = generate_answer(context, query)
-
-print("\nFINAL ANSWER:\n")
-print(answer)
