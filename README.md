@@ -1,21 +1,18 @@
+# 🧠 Production-Grade RAG AI System
 
-
-
-# 🧠 Production-Grade RAG System (From Scratch)
-
-> Building a Retrieval-Augmented Generation (RAG) system from first principles — focusing on **understanding, modularity, and real-world system design**.
+> Building a Retrieval-Augmented Generation (RAG) system from scratch — focusing on **system design, control, and real-world reliability**
 
 ---
 
 ## 🚀 Overview
 
-This project implements a **modular, production-oriented RAG pipeline** that combines:
+This project implements a **modular RAG pipeline** that enhances LLM responses using **external knowledge retrieval**.
 
-* **Semantic search (vector similarity)**
-* **Efficient retrieval (FAISS)**
-* **Context-aware answer generation using LLMs (local + pluggable)**
+Instead of relying on pretrained knowledge, the system:
 
-Instead of relying on high-level frameworks (LangChain, etc.), the system is built **component-by-component** to deeply understand how modern AI systems actually work in production.
+* Retrieves relevant information from a document store
+* Grounds responses using that context
+* Reduces hallucination through prompt control
 
 ---
 
@@ -23,41 +20,41 @@ Instead of relying on high-level frameworks (LangChain, etc.), the system is bui
 
 To build an **industry-relevant AI system** that demonstrates:
 
-* End-to-end RAG pipeline
-* Separation of retrieval vs generation
-* Modular LLM backend (OpenAI / local models)
-* Scalable architecture design
+* End-to-end RAG architecture
+* Retrieval + generation separation
+* Controlled LLM behavior
+* Local + pluggable LLM backend
 
 ---
 
 ## 🧠 System Architecture
 
 ```text
-Documents → Embeddings → Vector Store → Query → Retrieval → Context → LLM → Answer
+Documents → Chunking → Embeddings → Vector Store → Retrieval → Context → LLM → Answer
 ```
 
-Detailed flow:
+### Detailed Flow
 
 ```text
-Raw Docs
-   ↓
-Chunking (WIP)
-   ↓
+Raw Documents
+      ↓
+Chunking (overlap-based)
+      ↓
 Embeddings (SentenceTransformers)
-   ↓
+      ↓
 FAISS Vector Store
-   ↓
+      ↓
 User Query
-   ↓
+      ↓
 Query Embedding
-   ↓
-Similarity Search (Top-K)
-   ↓
-Relevant Context
-   ↓
-LLM (Ollama / OpenAI)
-   ↓
-Final Answer
+      ↓
+Top-K Retrieval
+      ↓
+Context Builder (Prompt Engineering)
+      ↓
+LLM (Ollama - LLaMA 3)
+      ↓
+Grounded Answer
 ```
 
 ---
@@ -66,34 +63,95 @@ Final Answer
 
 | Layer          | Technology           |
 | -------------- | -------------------- |
-| Backend API    | FastAPI              |
+| Backend        | Python               |
 | Embeddings     | SentenceTransformers |
 | Vector Search  | FAISS                |
 | LLM Backend    | Ollama (LLaMA 3)     |
 | (Optional) LLM | OpenAI API           |
-| Data Handling  | NumPy, Python        |
+| Data Handling  | NumPy                |
 
 ---
 
-## 🔄 Key Update: Local LLM Integration (Ollama)
+## 🔥 Key Features (Implemented)
 
-The system now uses **Ollama (LLaMA 3)** for local inference.
+### ✅ Semantic Search
 
-### Why this matters:
+* Converts text into dense vector embeddings
+* Enables meaning-based retrieval (not keyword match)
 
-* ✅ No API key or billing dependency
-* ✅ Works offline
-* ✅ Demonstrates modular LLM system design
-* ✅ Faster iteration and debugging
+---
 
-### Insight:
+### ✅ Vector Database (FAISS)
 
-> The LLM layer is **pluggable**, meaning it can switch between:
+* Stores embeddings efficiently
+* Retrieves top-k similar chunks
 
-* OpenAI (cloud)
-* Ollama (local)
+---
 
-Without changing the core pipeline.
+### ✅ Document Chunking (Day 4)
+
+* Splits documents into overlapping chunks
+* Improves retrieval precision
+* Prevents context loss
+
+---
+
+### ✅ Context Engineering (Day 5)
+
+* Structured prompt design to control LLM behavior
+* Forces model to answer **only from retrieved context**
+* Reduces hallucination
+
+---
+
+### ✅ Local LLM Integration
+
+* Uses **Ollama (LLaMA 3)** for inference
+* No API dependency
+* Fully offline capability
+
+---
+
+## 🔍 Example Workflow
+
+```python
+Query: "What is RAG?"
+
+→ Embed query  
+→ Retrieve relevant chunks  
+→ Build structured prompt  
+→ Pass to LLM  
+→ Generate grounded answer  
+```
+
+---
+
+## 🧪 Current Capabilities
+
+* Context-aware answering
+* Reduced hallucination
+* Retrieval-driven responses
+* Modular and extensible design
+
+---
+
+## ⚠️ Known Limitations
+
+* No reranking (yet)
+* Chunking is basic (no semantic splitting)
+* Limited evaluation metrics
+* No API layer (yet)
+
+---
+
+## 🚧 Roadmap
+
+* [ ] Advanced chunking (semantic / recursive)
+* [ ] Prompt optimization (structured outputs)
+* [ ] FastAPI endpoints (`/query`, `/upload`)
+* [ ] Reranking (cross-encoder)
+* [ ] Evaluation metrics (precision@k, latency)
+* [ ] Deployment (Docker / cloud)
 
 ---
 
@@ -103,11 +161,12 @@ Without changing the core pipeline.
 rag-system/
 │
 ├── app/
-│   ├── main.py
 │   └── services/
 │       ├── embeddings.py
 │       ├── loader.py
 │       ├── vector_store.py
+│       ├── chunker.py
+│       ├── context_builder.py
 │       └── llm.py
 │
 ├── data/
@@ -120,172 +179,29 @@ rag-system/
 
 ---
 
-## 🧪 Current Capabilities
+## 🧠 Engineering Highlights
 
-### ✅ Semantic Representation
-
-* Converts text → dense vector embeddings
-* Captures contextual meaning (not keywords)
-
-### ✅ Vector Search (FAISS)
-
-* Efficient similarity search
-* Retrieves top-k relevant documents
-
-### ✅ End-to-End Retrieval Pipeline
-
-* Query → embedding → retrieval → context
-
-### 🔄 LLM Integration (Ollama-based, improving)
-
-* Context-grounded answer generation
-* Reduced hallucination using retrieved knowledge
-
----
-
-## 🔍 Example Workflow
-
-```python
-Query: "What is RAG?"
-
-→ Convert query to embedding  
-→ Retrieve top-k relevant documents  
-→ Build context  
-→ Pass to LLM  
-→ Generate grounded answer  
-```
-
----
-
-## 📊 Concepts Demonstrated
-
-* Embedding space & semantic similarity
-* Vector databases (FAISS)
-* Retrieval vs Generation separation
-* Prompt grounding
-* Modular AI system design
-
----
-
-## 📅 Development Progress (Daily Build Log)
-
-### 🟢 Day 1 — Embedding Pipeline
-
-* Implemented document loader for raw text ingestion
-* Generated embeddings using SentenceTransformers
-* Understood semantic representation of text
-
----
-
-### 🔵 Day 2 — Vector Search (FAISS)
-
-* Built vector store using FAISS
-* Stored document embeddings
-* Implemented semantic similarity search
-* Retrieved top-k relevant documents
-
----
-
-### 🟣 Day 3 — RAG Pipeline (LLM Integration)
-
-* Connected retrieval pipeline with LLM
-* Implemented context-based answer generation
-* Designed **pluggable LLM architecture**
-* Switched to **Ollama (local LLM)**
-* Built end-to-end system: query → retrieval → answer
-
----
-
-### 🔄 Current Stage (Day 4)
-
-👉 Improving retrieval quality using **document chunking**
-
----
-
-### 🚀 Upcoming
-
-* Chunk-based embeddings for better retrieval accuracy
-* Context optimization
-* FastAPI endpoints (`/query`, `/upload`)
-* Deployment-ready architecture
-
----
-
-## 🚧 Roadmap
-
-* [ ] Document chunking (critical improvement)
-* [ ] Context window optimization
-* [ ] Reranking (cross-encoder)
-* [ ] API endpoints (`/query`, `/upload`)
-* [ ] Evaluation metrics (precision@k, latency)
-* [ ] Deployment (Docker / cloud)
-* [ ] UI (optional)
-
----
-
-## 📈 Engineering Focus
-
-This project emphasizes:
-
-* **Modular architecture**
-* **System-level thinking**
-* **Explainability**
-* **Incremental development (daily commits)**
-
----
-
-## 💡 Philosophy
-
-> “Don’t use abstractions you don’t understand.”
-
-This system is intentionally built without heavy frameworks to:
-
-* Gain deeper control
-* Improve debugging ability
-* Build real-world intuition
+* Built **without LangChain** to understand system internals
+* Separation of concerns (retrieval vs generation)
+* Modular design for easy scaling
+* Focus on **LLM control and reliability**, not just output
 
 ---
 
 ## 📌 Status
 
 🚧 Actively under development
-📅 Daily commits as proof of work
+📅 Daily progress with incremental commits
 
 ---
 
 ## 🤝 Connect
 
-* GitHub: [https://github.com/gee-46](https://github.com/gee-46)
-* LinkedIn: [http://www.linkedin.com/in/gautam-n-chipkar](http://www.linkedin.com/in/gautam-n-chipkar)
+* GitHub: https://github.com/gee-46
+* LinkedIn: https://www.linkedin.com/in/gautam-n-chipkar-348b092a5/
 
 ---
 
 ## ⭐ If you find this useful
 
-Star the repo — it helps visibility and supports the project.
-
----
-
-# 🔥 WHAT YOU JUST DID
-
-Now your README:
-
-* Shows **clear progression** ✅
-* Reflects **real system design** ✅
-* Signals **serious engineering thinking** ✅
-
-👉 This is now **portfolio-level, not student-level**
-
----
-
-# 🚀 NEXT
-
-Commit it:
-
-```bash
-git add README.md
-git commit -m "Enhance README with progress tracking and system evolution"
-git push
-```
-
----
+Consider starring the repo — it helps visibility and supports the project.
