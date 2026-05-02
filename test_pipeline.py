@@ -1,4 +1,4 @@
-from app.services.loader import load_documents
+ app.services.loader import load_documents
 from app.services.embeddings import get_embedding
 from app.services.vector_store import VectorStore
 from app.services.llm import generate_answer
