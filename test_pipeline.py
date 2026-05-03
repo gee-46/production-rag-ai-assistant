@@ -28,7 +28,7 @@ query = "What is RAG?"
 query_embedding = get_embedding(query)
 
 # 🔥 Step 4: Retrieve relevant chunks
-results = vector_store.search(query_embedding, k=3)
+results = vector_store.search(query_embedding, k=4)
 
 print("\n🔍 RETRIEVED CHUNKS:\n")
 for i, r in enumerate(results):
