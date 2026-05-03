@@ -2,19 +2,17 @@ def build_prompt(context_chunks, query):
     context = "\n\n".join(context_chunks)
 
     prompt = f"""
-You are an AI assistant that answers questions ONLY using the provided context.
+You are an AI assistant.
+
+Answer the question using ONLY the provided context.
 
 Rules:
-- Do not use external knowledge
-- If answer is not in context, say "I don't know based on the provided information."
+- Do NOT use external knowledge
+- Only answer if relevant information exists
+- Respond ONLY in bullet points
+- Do NOT add any introductory or concluding text
+- Do NOT say phrases like "Here is the answer"
+- Each bullet must be short and clear
+- Maximum 4 bullets
+- Do not combine too many ideas in one bullet
 
-Context:
-{context}
-
-Question:
-{query}
-
-Answer:
-"""
-
-    return prompt
