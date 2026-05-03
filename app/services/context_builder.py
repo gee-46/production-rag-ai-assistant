@@ -16,3 +16,14 @@ Rules:
 - Maximum 4 bullets
 - Do not combine too many ideas in one bullet
 
+---------------------
+CONTEXT:
+{context}
+---------------------
+
+QUESTION:
+{query}
+
+ANSWER:
+"""
+    return prompt
