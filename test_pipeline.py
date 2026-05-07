@@ -44,3 +44,4 @@ print(prompt[:500])  # print first part only
 answer = generate_answer(prompt)
 
 print("\nFINAL ANSWER:\n")
+print(answer)
