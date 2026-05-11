@@ -21,7 +21,7 @@ Instead of relying purely on pretrained knowledge, the system:
 
 ## 🎯 Objective
 
-To buil d an **industry-relevant AI system** that demonstrates:
+To buil$env:GIT_AUTHOR_DATE="2026-05-11T20:00:00"d an **industry-relevant AI system** that demonstrates:
 
 - End-to-end RAG architecture  
 - Clear separation of retrieval vs generation  
