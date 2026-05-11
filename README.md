@@ -1,6 +1,4 @@
 
-
-
 # 🧠 Production-Grade RAG AI System
 
 > Building a Retrieval-Augmented Generation (RAG) system from scratch — focusing on **system design, control, and reliability**
@@ -16,17 +14,19 @@ Instead of relying purely on pretrained knowledge, the system:
 - Retrieves relevant information from a document store
 - Grounds responses using retrieved context
 - Controls LLM output to reduce hallucination
+- Exposes the pipeline through a FastAPI backend
 
 ---
 
 ## 🎯 Objective
 
-To buil$env:GIT_AUTHOR_DATE="2026-05-11T20:00:00"d an **industry-relevant AI system** that demonstrates:
+To build an **industry-relevant AI system** that demonstrates:
 
 - End-to-end RAG architecture  
 - Clear separation of retrieval vs generation  
-- Controlled LLM behavior through prompt design  
+- Controlled LLM behavior through prompt engineering  
 - Local + pluggable LLM backend  
+- API-based AI system deployment  
 
 ---
 
@@ -58,20 +58,23 @@ Context Builder (Prompt Engineering)
 LLM (Ollama - LLaMA 3)
       ↓
 Grounded Answer
+      ↓
+FastAPI JSON Response
 ```
 
 ---
 
 ## ⚙️ Tech Stack
 
-| Layer          | Technology           |
-| -------------- | -------------------- |
-| Backend        | Python               |
-| Embeddings     | SentenceTransformers |
-| Vector Search  | FAISS                |
-| LLM Backend    | Ollama (LLaMA 3)     |
-| (Optional) LLM | OpenAI API           |
-| Data Handling  | NumPy                |
+| Layer         | Technology           |
+| ------------- | -------------------- |
+| Backend API   | FastAPI              |
+| Backend Logic | Python               |
+| Embeddings    | SentenceTransformers |
+| Vector Search | FAISS                |
+| LLM Backend   | Ollama (LLaMA 3)     |
+| Optional LLM  | OpenAI API           |
+| Data Handling | NumPy                |
 
 ---
 
@@ -80,7 +83,7 @@ Grounded Answer
 ### ✅ Semantic Retrieval
 
 * Converts text into dense vector embeddings
-* Enables meaning-based search (not keyword matching)
+* Enables meaning-based search instead of keyword matching
 
 ---
 
@@ -102,16 +105,16 @@ Grounded Answer
 ### ✅ Context Engineering
 
 * Structured prompt design
-* Forces model to use only retrieved context
+* Forces model to answer only from retrieved context
 * Reduces hallucination
 
 ---
 
-### ✅ Structured Output Control (Day 6)
+### ✅ Structured Output Control
 
 * Enforces bullet-point responses
-* Removes unnecessary LLM verbosity
-* Produces concise, readable, and consistent outputs
+* Removes unnecessary verbosity
+* Produces concise and readable outputs
 
 ---
 
@@ -119,7 +122,16 @@ Grounded Answer
 
 * Uses Ollama (LLaMA 3)
 * No API dependency
-* Fully offline capability
+* Fully offline inference capability
+
+---
+
+### ✅ FastAPI Backend Integration (Day 7)
+
+* Exposes RAG pipeline through REST API
+* Supports query-based interaction using `/query` endpoint
+* Auto-generated Swagger API documentation (`/docs`)
+* Returns structured JSON responses
 
 ---
 
@@ -132,6 +144,31 @@ Query: "What is RAG?"
 → Retrieve relevant chunks  
 → Build structured prompt  
 → Generate grounded answer  
+→ Return API response
+```
+
+---
+
+## 🌐 API Example
+
+### POST `/query`
+
+#### Request
+
+```json
+{
+  "query": "What is RAG?"
+}
+```
+
+#### Response
+
+```json
+{
+  "query": "What is RAG?",
+  "answer": "• Retrieves relevant documents\n• Uses retrieved context for grounded generation",
+  "retrieved_chunks": [...]
+}
 ```
 
 ---
@@ -140,27 +177,32 @@ Query: "What is RAG?"
 
 * Context-grounded answering
 * Reduced hallucination
-* Structured, controlled outputs
+* Structured and controlled outputs
+* Local LLM inference
+* API-based interaction
 * Modular and extensible pipeline
 
 ---
 
-## ⚠️ Limitations
+## ⚠️ Current Limitations
 
-* No reranking (yet)
-* Basic chunking (no semantic splitting)
+* No reranking yet
+* Basic chunking strategy
+* No persistent vector database
+* No authentication layer
 * No evaluation metrics
-* No API layer (yet)
 
 ---
 
 ## 🚧 Roadmap
 
 * [ ] Semantic / recursive chunking
-* [ ] Reranking (cross-encoder)
-* [ ] FastAPI endpoints (`/query`, `/upload`)
+* [ ] Cross-encoder reranking
+* [ ] Dynamic document upload API
+* [ ] Persistent vector storage
 * [ ] Evaluation metrics (precision@k, latency)
-* [ ] Deployment (Docker / cloud)
+* [ ] Docker deployment
+* [ ] Cloud deployment
 
 ---
 
@@ -170,6 +212,8 @@ Query: "What is RAG?"
 rag-system/
 │
 ├── app/
+│   ├── main.py
+│   │
 │   └── services/
 │       ├── embeddings.py
 │       ├── loader.py
@@ -192,7 +236,8 @@ rag-system/
 
 * Built without LangChain to understand system internals
 * Explicit separation of retrieval vs generation
-* Focus on **LLM reliability, not just output**
+* Focused on LLM reliability and retrieval quality
+* API-first backend architecture
 * Designed for extensibility and production transition
 
 ---
@@ -200,7 +245,7 @@ rag-system/
 ## 📌 Status
 
 🚧 Actively under development
-📅 Daily iterative improvements
+📅 Daily iterative improvements and feature additions
 
 ---
 
@@ -215,18 +260,5 @@ rag-system/
 
 If you find this useful, consider starring the repo.
 
-````
-
----
-
-# 🧠 FINAL FEEDBACK (HONEST)
-
-Your README now:
-
-```text
-✔ Clear system understanding
-✔ Shows engineering thinking
-✔ Shows progression (Day-wise implicitly)
-✔ Not tutorial-ish anymore
-````
-
+```
+```
