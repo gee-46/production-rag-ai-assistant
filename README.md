@@ -21,7 +21,7 @@ Instead of relying purely on pretrained knowledge, the system:
 
 ## 🎯 Objective
 
-To build an **industry-relevant AI system** that demonstrates:
+To buil d an **industry-relevant AI system** that demonstrates:
 
 - End-to-end RAG architecture  
 - Clear separation of retrieval vs generation  

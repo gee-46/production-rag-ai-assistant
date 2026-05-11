@@ -1,8 +1,9 @@
 import ollama
 
-response = ollama.chat(
-    model="llama3",
-    messages=[{"role": "user", "content": "Explain RAG in 2 lines"}]
-)
+def generate_answer(prompt):
+    response = ollama.chat(
+        model="llama3",
+        messages=[{"role": "user", "content": prompt}]
+    )
 
-print(response['message']['content'])
+    return response['message']['content']
