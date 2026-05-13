@@ -71,3 +71,39 @@ def home():
         "message": "Production RAG API is running"
     }
 
+# -----------------------------
+# Query Endpoint
+# -----------------------------
+
+@app.post("/query")
+def query_rag(request: QueryRequest):
+
+    print(f"\nUser Query: {request.query}")
+
+    # Convert query into embedding
+    query_embedding = get_embedding(request.query)
+
+    # Retrieve top-k similar chunks
+    results = vector_store.search(query_embedding, k=4)
+
+    print("\nRetrieved Chunks:\n")
+
+    for i, chunk in enumerate(results, start=1):
+        print(f"{i}. {chunk[:200]}\n")
+
+    # Build prompt using retrieved chunks
+    prompt = build_prompt(results, request.query)
+
+    # Generate grounded answer
+    answer = generate_answer(prompt)
+
+    return {
+        "query": request.query,
+        "answer": answer,
+        "retrieved_chunks": results
+    }
+
+
+
+
+
