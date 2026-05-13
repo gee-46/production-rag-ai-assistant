@@ -107,3 +107,43 @@ def query_rag(request: QueryRequest):
 
 
 
+# -----------------------------
+# Upload Endpoint
+# -----------------------------
+
+@app.post("/upload")
+async def upload_document(file: UploadFile = File(...)):
+
+    print(f"\nUploaded File: {file.filename}")
+
+    # -----------------------------
+    # Handle TXT Files
+    # -----------------------------
+
+    if file.filename.endswith(".txt"):
+
+        content = await file.read()
+
+        text = content.decode("utf-8")
+
+    # -----------------------------
+    # Handle DOCX Files
+    # -----------------------------
+
+    elif file.filename.endswith(".docx"):
+
+        temp_content = await file.read()
+
+        with open("temp.docx", "wb") as f:
+            f.write(temp_content)
+
+        doc = Document("temp.docx")
+
+        text = "\n".join([para.text for para in doc.paragraphs])
+
+    else:
+        return {
+            "error": "Only .txt and .docx files are supported"
+        }
+
+ 
