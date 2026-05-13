@@ -1,4 +1,3 @@
-
 # 🧠 Production-Grade RAG AI System
 
 > Building a Retrieval-Augmented Generation (RAG) system from scratch — focusing on **system design, control, and reliability**
@@ -15,6 +14,7 @@ Instead of relying purely on pretrained knowledge, the system:
 - Grounds responses using retrieved context
 - Controls LLM output to reduce hallucination
 - Exposes the pipeline through a FastAPI backend
+- Supports dynamic document uploads without restarting the server
 
 ---
 
@@ -27,6 +27,7 @@ To build an **industry-relevant AI system** that demonstrates:
 - Controlled LLM behavior through prompt engineering  
 - Local + pluggable LLM backend  
 - API-based AI system deployment  
+- Dynamic knowledge ingestion pipelines  
 
 ---
 
@@ -34,31 +35,31 @@ To build an **industry-relevant AI system** that demonstrates:
 
 ```text
 Documents → Chunking → Embeddings → Vector Store → Retrieval → Context → LLM → Answer
-````
+```
 
 ### Detailed Flow
 
 ```text
-Raw Documents
-      ↓
+Raw Documents / Uploaded Files
+              ↓
 Chunking (overlap-based)
-      ↓
+              ↓
 Embeddings (SentenceTransformers)
-      ↓
+              ↓
 FAISS Vector Store
-      ↓
+              ↓
 User Query
-      ↓
+              ↓
 Query Embedding
-      ↓
+              ↓
 Top-K Retrieval
-      ↓
+              ↓
 Context Builder (Prompt Engineering)
-      ↓
+              ↓
 LLM (Ollama - LLaMA 3)
-      ↓
+              ↓
 Grounded Answer
-      ↓
+              ↓
 FastAPI JSON Response
 ```
 
@@ -66,15 +67,17 @@ FastAPI JSON Response
 
 ## ⚙️ Tech Stack
 
-| Layer         | Technology           |
-| ------------- | -------------------- |
-| Backend API   | FastAPI              |
-| Backend Logic | Python               |
-| Embeddings    | SentenceTransformers |
-| Vector Search | FAISS                |
-| LLM Backend   | Ollama (LLaMA 3)     |
-| Optional LLM  | OpenAI API           |
-| Data Handling | NumPy                |
+| Layer              | Technology           |
+| ------------------ | -------------------- |
+| Backend API        | FastAPI              |
+| Backend Logic      | Python               |
+| Embeddings         | SentenceTransformers |
+| Vector Search      | FAISS                |
+| LLM Backend        | Ollama (LLaMA 3)     |
+| Optional LLM       | OpenAI API           |
+| File Upload        | python-multipart     |
+| DOCX Parsing       | python-docx          |
+| Data Handling      | NumPy                |
 
 ---
 
@@ -82,56 +85,66 @@ FastAPI JSON Response
 
 ### ✅ Semantic Retrieval
 
-* Converts text into dense vector embeddings
-* Enables meaning-based search instead of keyword matching
+- Converts text into dense vector embeddings
+- Enables meaning-based search instead of keyword matching
 
 ---
 
 ### ✅ FAISS Vector Search
 
-* Efficient similarity search
-* Retrieves top-k relevant chunks
+- Efficient similarity search
+- Retrieves top-k relevant chunks
 
 ---
 
 ### ✅ Document Chunking
 
-* Overlapping chunk strategy
-* Preserves context across splits
-* Improves retrieval accuracy
+- Overlapping chunk strategy
+- Preserves context across splits
+- Improves retrieval accuracy
 
 ---
 
 ### ✅ Context Engineering
 
-* Structured prompt design
-* Forces model to answer only from retrieved context
-* Reduces hallucination
+- Structured prompt design
+- Forces model to answer only from retrieved context
+- Reduces hallucination
 
 ---
 
 ### ✅ Structured Output Control
 
-* Enforces bullet-point responses
-* Removes unnecessary verbosity
-* Produces concise and readable outputs
+- Enforces bullet-point responses
+- Removes unnecessary verbosity
+- Produces concise and readable outputs
 
 ---
 
 ### ✅ Local LLM Integration
 
-* Uses Ollama (LLaMA 3)
-* No API dependency
-* Fully offline inference capability
+- Uses Ollama (LLaMA 3)
+- No API dependency
+- Fully offline inference capability
 
 ---
 
-### ✅ FastAPI Backend Integration (Day 7)
+### ✅ FastAPI Backend Integration
 
-* Exposes RAG pipeline through REST API
-* Supports query-based interaction using `/query` endpoint
-* Auto-generated Swagger API documentation (`/docs`)
-* Returns structured JSON responses
+- Exposes RAG pipeline through REST API
+- Supports query-based interaction using `/query`
+- Auto-generated Swagger documentation (`/docs`)
+- Returns structured JSON responses
+
+---
+
+### ✅ Dynamic Document Upload (Day 8)
+
+- Upload `.txt` and `.docx` files dynamically
+- Automatically chunks uploaded content
+- Generates embeddings in real-time
+- Updates FAISS vector store live
+- Makes uploaded knowledge immediately searchable
 
 ---
 
@@ -140,18 +153,34 @@ FastAPI JSON Response
 ```python
 Query: "What is RAG?"
 
-→ Embed query  
-→ Retrieve relevant chunks  
-→ Build structured prompt  
-→ Generate grounded answer  
+→ Embed query
+→ Retrieve relevant chunks
+→ Build structured prompt
+→ Generate grounded answer
 → Return API response
 ```
 
 ---
 
-## 🌐 API Example
+## 🌐 API Endpoints
+
+### GET `/`
+
+Health check endpoint.
+
+#### Response
+
+```json
+{
+  "message": "Production RAG API is running"
+}
+```
+
+---
 
 ### POST `/query`
+
+Query the RAG pipeline.
 
 #### Request
 
@@ -173,36 +202,56 @@ Query: "What is RAG?"
 
 ---
 
+### POST `/upload`
+
+Upload `.txt` or `.docx` documents dynamically.
+
+#### Response
+
+```json
+{
+  "filename": "document.docx",
+  "chunks_added": 5,
+  "message": "Document uploaded successfully"
+}
+```
+
+---
+
 ## 🧪 Current Capabilities
 
-* Context-grounded answering
-* Reduced hallucination
-* Structured and controlled outputs
-* Local LLM inference
-* API-based interaction
-* Modular and extensible pipeline
+- Context-grounded answering
+- Reduced hallucination
+- Structured and controlled outputs
+- Local LLM inference
+- API-based interaction
+- Dynamic document ingestion
+- Live vector store updates
+- Modular and extensible architecture
 
 ---
 
 ## ⚠️ Current Limitations
 
-* No reranking yet
-* Basic chunking strategy
-* No persistent vector database
-* No authentication layer
-* No evaluation metrics
+- No reranking yet
+- Basic chunking strategy
+- No persistent vector database
+- No authentication layer
+- No evaluation metrics
+- Supports only `.txt` and `.docx` uploads currently
 
 ---
 
 ## 🚧 Roadmap
 
-* [ ] Semantic / recursive chunking
-* [ ] Cross-encoder reranking
-* [ ] Dynamic document upload API
-* [ ] Persistent vector storage
-* [ ] Evaluation metrics (precision@k, latency)
-* [ ] Docker deployment
-* [ ] Cloud deployment
+- [ ] Semantic / recursive chunking
+- [ ] Cross-encoder reranking
+- [ ] Persistent FAISS storage
+- [ ] PDF support
+- [ ] Metadata filtering
+- [ ] Evaluation metrics (precision@k, latency)
+- [ ] Docker deployment
+- [ ] Cloud deployment
 
 ---
 
@@ -234,31 +283,29 @@ rag-system/
 
 ## 🧠 Engineering Highlights
 
-* Built without LangChain to understand system internals
-* Explicit separation of retrieval vs generation
-* Focused on LLM reliability and retrieval quality
-* API-first backend architecture
-* Designed for extensibility and production transition
+- Built without LangChain to understand system internals
+- Explicit separation of retrieval vs generation
+- Focused on LLM reliability and retrieval quality
+- API-first backend architecture
+- Dynamic runtime ingestion support
+- Designed for extensibility and production transition
 
 ---
 
 ## 📌 Status
 
-🚧 Actively under development
+🚧 Actively under development  
 📅 Daily iterative improvements and feature additions
 
 ---
 
 ## 🤝 Connect
 
-* GitHub: [https://github.com/gee-46](https://github.com/gee-46)
-* LinkedIn: [https://www.linkedin.com/in/gautam-n-chipkar-348b092a5/](https://www.linkedin.com/in/gautam-n-chipkar-348b092a5/)
+- GitHub: https://github.com/gee-46
+- LinkedIn: https://www.linkedin.com/in/gautam-n-chipkar-348b092a5/
 
 ---
 
 ## ⭐ Support
 
 If you find this useful, consider starring the repo.
-
-```
-```
