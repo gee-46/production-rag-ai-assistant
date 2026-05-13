@@ -1,4 +1,4 @@
 fastapi
 uvicorn
-sentence-transformers
-faiss-cpu
+python-multipart
+python-docx
