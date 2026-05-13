@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 
 from app.services.loader import load_documents
@@ -7,6 +7,7 @@ from app.services.vector_store import VectorStore
 from app.services.chunker import chunk_text
 from app.services.context_builder import build_prompt
 from app.services.llm import generate_answer
+from docx import Document
 
 
 # -----------------------------
@@ -70,35 +71,3 @@ def home():
         "message": "Production RAG API is running"
     }
 
-
-# -----------------------------
-# Query Endpoint
-# -----------------------------
-
-@app.post("/query")
-def query_rag(request: QueryRequest):
-
-    print(f"\nUser Query: {request.query}")
-
-    # Convert query to embedding
-    query_embedding = get_embedding(request.query)
-
-    # Retrieve relevant chunks
-    results = vector_store.search(query_embedding, k=4)
-
-    print("\nRetrieved Chunks:\n")
-
-    for i, chunk in enumerate(results, start=1):
-        print(f"{i}. {chunk[:200]}\n")
-
-    # Build prompt
-    prompt = build_prompt(results, request.query)
-
-    # Generate answer
-    answer = generate_answer(prompt)
-
-    return {
-        "query": request.query,
-        "answer": answer,
-        "retrieved_chunks": results
-    }
