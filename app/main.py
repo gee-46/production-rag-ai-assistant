@@ -147,3 +147,30 @@ async def upload_document(file: UploadFile = File(...)):
         }
 
  
+   # -----------------------------
+    # Chunk Text
+    # -----------------------------
+
+    chunks = chunk_text(text)
+
+    print(f"Generated {len(chunks)} chunks")
+
+    # -----------------------------
+    # Generate Embeddings
+    # -----------------------------
+
+    embeddings = [get_embedding(chunk) for chunk in chunks]
+
+    # -----------------------------
+    # Update Vector Store
+    # -----------------------------
+
+    vector_store.add(embeddings, chunks)
+
+    print("Document added to vector store.\n")
+
+    return {
+        "filename": file.filename,
+        "chunks_added": len(chunks),
+        "message": "Document uploaded successfully"
+    }
