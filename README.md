@@ -15,6 +15,7 @@ Instead of relying purely on pretrained knowledge, the system:
 - Controls LLM output to reduce hallucination
 - Exposes the pipeline through a FastAPI backend
 - Supports dynamic document uploads without restarting the server
+- Persists vector embeddings across server restarts
 
 ---
 
@@ -28,6 +29,7 @@ To build an **industry-relevant AI system** that demonstrates:
 - Local + pluggable LLM backend  
 - API-based AI system deployment  
 - Dynamic knowledge ingestion pipelines  
+- Persistent vector database architecture  
 
 ---
 
@@ -47,6 +49,8 @@ Chunking (overlap-based)
 Embeddings (SentenceTransformers)
               ↓
 FAISS Vector Store
+              ↓
+Persistent Storage
               ↓
 User Query
               ↓
@@ -148,6 +152,15 @@ FastAPI JSON Response
 
 ---
 
+### ✅ Persistent Vector Storage (Day 9)
+
+- Saves FAISS vector index locally
+- Restores embeddings automatically on server restart
+- Preserves uploaded knowledge across sessions
+- Enables stateful retrieval architecture
+
+---
+
 ## 🔍 Example Workflow
 
 ```python
@@ -226,6 +239,7 @@ Upload `.txt` or `.docx` documents dynamically.
 - Local LLM inference
 - API-based interaction
 - Dynamic document ingestion
+- Persistent vector database
 - Live vector store updates
 - Modular and extensible architecture
 
@@ -235,10 +249,10 @@ Upload `.txt` or `.docx` documents dynamically.
 
 - No reranking yet
 - Basic chunking strategy
-- No persistent vector database
 - No authentication layer
 - No evaluation metrics
 - Supports only `.txt` and `.docx` uploads currently
+- No metadata-based filtering yet
 
 ---
 
@@ -246,7 +260,7 @@ Upload `.txt` or `.docx` documents dynamically.
 
 - [ ] Semantic / recursive chunking
 - [ ] Cross-encoder reranking
-- [ ] Persistent FAISS storage
+- [x] Persistent FAISS storage
 - [ ] PDF support
 - [ ] Metadata filtering
 - [ ] Evaluation metrics (precision@k, latency)
@@ -274,6 +288,10 @@ rag-system/
 ├── data/
 │   └── raw_docs/
 │
+├── storage/
+│   ├── faiss_index.bin
+│   └── texts.pkl
+│
 ├── test_pipeline.py
 ├── requirements.txt
 └── README.md
@@ -288,6 +306,7 @@ rag-system/
 - Focused on LLM reliability and retrieval quality
 - API-first backend architecture
 - Dynamic runtime ingestion support
+- Persistent vector database design
 - Designed for extensibility and production transition
 
 ---
