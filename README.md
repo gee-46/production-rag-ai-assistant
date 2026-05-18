@@ -1,6 +1,6 @@
 # 🧠 Production-Grade RAG AI System
 
-> Building a Retrieval-Augmented Generation (RAG) system from scratch — focusing on **system design, control, and reliability**
+> Building a Retrieval-Augmented Generation (RAG) system from scratch — focusing on **system design, control, reliability, and retrieval quality**
 
 ---
 
@@ -16,6 +16,7 @@ Instead of relying purely on pretrained knowledge, the system:
 - Exposes the pipeline through a FastAPI backend
 - Supports dynamic document uploads without restarting the server
 - Persists vector embeddings across server restarts
+- Uses cross-encoder reranking for improved retrieval quality
 
 ---
 
@@ -30,16 +31,19 @@ To build an **industry-relevant AI system** that demonstrates:
 - API-based AI system deployment  
 - Dynamic knowledge ingestion pipelines  
 - Persistent vector database architecture  
+- Advanced retrieval engineering techniques  
 
 ---
 
 ## 🧠 System Architecture
 
 ```text
-Documents → Chunking → Embeddings → Vector Store → Retrieval → Context → LLM → Answer
+Documents → Chunking → Embeddings → Vector Store → Retrieval → Reranking → Context → LLM → Answer
 ```
 
-### Detailed Flow
+---
+
+## 🔄 Detailed Flow
 
 ```text
 Raw Documents / Uploaded Files
@@ -58,6 +62,8 @@ Query Embedding
               ↓
 Top-K Retrieval
               ↓
+Cross-Encoder Reranking
+              ↓
 Context Builder (Prompt Engineering)
               ↓
 LLM (Ollama - LLaMA 3)
@@ -71,17 +77,18 @@ FastAPI JSON Response
 
 ## ⚙️ Tech Stack
 
-| Layer              | Technology           |
-| ------------------ | -------------------- |
-| Backend API        | FastAPI              |
-| Backend Logic      | Python               |
-| Embeddings         | SentenceTransformers |
-| Vector Search      | FAISS                |
-| LLM Backend        | Ollama (LLaMA 3)     |
-| Optional LLM       | OpenAI API           |
-| File Upload        | python-multipart     |
-| DOCX Parsing       | python-docx          |
-| Data Handling      | NumPy                |
+| Layer              | Technology                         |
+| ------------------ | ---------------------------------- |
+| Backend API        | FastAPI                            |
+| Backend Logic      | Python                             |
+| Embeddings         | SentenceTransformers               |
+| Vector Search      | FAISS                              |
+| Reranking          | CrossEncoder (MiniLM)              |
+| LLM Backend        | Ollama (LLaMA 3)                   |
+| Optional LLM       | OpenAI API                         |
+| File Upload        | python-multipart                   |
+| DOCX Parsing       | python-docx                        |
+| Data Handling      | NumPy                              |
 
 ---
 
@@ -161,13 +168,24 @@ FastAPI JSON Response
 
 ---
 
+### ✅ Cross-Encoder Reranking (Day 10)
+
+- Implements two-stage retrieval architecture
+- Uses semantic reranking after FAISS retrieval
+- Improves chunk relevance and answer grounding
+- Reduces noisy retrieval results
+- Uses `cross-encoder/ms-marco-MiniLM-L-6-v2`
+
+---
+
 ## 🔍 Example Workflow
 
 ```python
-Query: "What is RAG?"
+Query: "What are advantages of RAG?"
 
 → Embed query
-→ Retrieve relevant chunks
+→ Retrieve candidate chunks
+→ Rerank retrieved chunks
 → Build structured prompt
 → Generate grounded answer
 → Return API response
@@ -199,7 +217,7 @@ Query the RAG pipeline.
 
 ```json
 {
-  "query": "What is RAG?"
+  "query": "What are advantages of RAG?"
 }
 ```
 
@@ -207,8 +225,8 @@ Query the RAG pipeline.
 
 ```json
 {
-  "query": "What is RAG?",
-  "answer": "• Retrieves relevant documents\n• Uses retrieved context for grounded generation",
+  "query": "What are advantages of RAG?",
+  "answer": "• Reduces hallucinations\n• Enables domain-specific knowledge\n• Keeps information up-to-date without retraining\n• Improves factual accuracy",
   "retrieved_chunks": [...]
 }
 ```
@@ -241,13 +259,15 @@ Upload `.txt` or `.docx` documents dynamically.
 - Dynamic document ingestion
 - Persistent vector database
 - Live vector store updates
+- Cross-encoder reranked retrieval
+- Two-stage retrieval pipeline
 - Modular and extensible architecture
 
 ---
 
 ## ⚠️ Current Limitations
 
-- No reranking yet
+- No metadata-aware reranking yet
 - Basic chunking strategy
 - No authentication layer
 - No evaluation metrics
@@ -259,7 +279,7 @@ Upload `.txt` or `.docx` documents dynamically.
 ## 🚧 Roadmap
 
 - [ ] Semantic / recursive chunking
-- [ ] Cross-encoder reranking
+- [x] Cross-encoder reranking
 - [x] Persistent FAISS storage
 - [ ] PDF support
 - [ ] Metadata filtering
@@ -283,6 +303,7 @@ rag-system/
 │       ├── vector_store.py
 │       ├── chunker.py
 │       ├── context_builder.py
+│       ├── reranker.py
 │       └── llm.py
 │
 ├── data/
@@ -294,6 +315,7 @@ rag-system/
 │
 ├── test_pipeline.py
 ├── requirements.txt
+├── .gitignore
 └── README.md
 ```
 
@@ -307,6 +329,7 @@ rag-system/
 - API-first backend architecture
 - Dynamic runtime ingestion support
 - Persistent vector database design
+- Implemented two-stage retrieval (FAISS + CrossEncoder)
 - Designed for extensibility and production transition
 
 ---
@@ -315,6 +338,20 @@ rag-system/
 
 🚧 Actively under development  
 📅 Daily iterative improvements and feature additions
+
+---
+
+## 🏆 Current Achievements
+
+- Built a modular end-to-end RAG pipeline
+- Implemented semantic vector retrieval using FAISS
+- Added dynamic document upload support
+- Added persistent vector database storage
+- Integrated local LLM inference using Ollama
+- Implemented prompt-controlled grounded generation
+- Added production-style reranking architecture
+- Built a REST API backend using FastAPI
+- Designed the system without LangChain abstraction
 
 ---
 
