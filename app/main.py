@@ -103,6 +103,8 @@ def query_rag(request: QueryRequest):
     # Retrieve candidate chunks
     results = vector_store.search(query_embedding, k=10)
 
+    print("Applying semantic reranking...")
+
     # Rerank chunks
     results = rerank(request.query, results, top_k=3)
 
@@ -114,6 +116,8 @@ def query_rag(request: QueryRequest):
 
     # Build prompt using retrieved chunks
     prompt = build_prompt(results, request.query)
+
+    print("Generating grounded response...")
 
     # Generate grounded answer
     answer = generate_answer(prompt)
@@ -194,7 +198,7 @@ async def upload_document(file: UploadFile = File(...)):
     # Save updated vector database
     vector_store.save()
 
-    print("Document added to vector store.\n")
+    print("Document added to vector store.")
 
     return {
         "filename": file.filename,
