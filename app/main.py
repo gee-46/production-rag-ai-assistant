@@ -204,4 +204,4 @@ async def upload_document(file: UploadFile = File(...)):
         "filename": file.filename,
         "chunks_added": len(chunks),
         "message": "Document uploaded successfully"
-    
+    t}
