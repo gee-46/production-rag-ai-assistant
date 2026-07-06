@@ -1,4 +1,4 @@
-# 🧠 Production-Grade RAG AI System
+
 
 > Building a Retrieval-Augmented Generation (RAG) system from scratch — focusing on **system design, control, reliability, and retrieval quality**
 
