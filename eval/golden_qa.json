@@ -1,0 +1,82 @@
+[
+  {
+    "id": "case-01-fact-port",
+    "category": "direct_fact",
+    "query": "What TCP port is management ingress restricted to on the cluster?",
+    "expected_filenames": ["cloud_infrastructure_v2.md"],
+    "reference_answer": "Management ingress is restricted strictly to TCP port 8443.",
+    "negative": false
+  },
+  {
+    "id": "case-02-exact-id-cluster",
+    "category": "exact_identifier",
+    "query": "What is the cluster identifier for the compute nodes in us-east-1?",
+    "expected_filenames": ["cloud_infrastructure_v2.md"],
+    "reference_answer": "The enterprise cluster identifier is CLUSTER-DELTA-9.",
+    "negative": false
+  },
+  {
+    "id": "case-03-exact-id-device",
+    "category": "exact_identifier",
+    "query": "What is the device model identifier for the physiological telemetry device?",
+    "expected_filenames": ["medical_device_safety.md"],
+    "reference_answer": "The device model identifier is MED-PULSE-88.",
+    "negative": false
+  },
+  {
+    "id": "case-04-paraphrase-battery",
+    "category": "paraphrase",
+    "query": "How is the telemetry unit powered and what is its electrical voltage rating?",
+    "expected_filenames": ["medical_device_safety.md"],
+    "reference_answer": "The unit is powered by a 3.7V Lithium-ion rechargeable cell with over-current protection.",
+    "negative": false
+  },
+  {
+    "id": "case-05-multi-chunk-backup",
+    "category": "multi_chunk",
+    "query": "What are the snapshot retention periods and RTO/RPO targets for the infrastructure?",
+    "expected_filenames": ["cloud_infrastructure_v2.md"],
+    "reference_answer": "Standard snapshots are retained for 30 days, compliance archives for 7 years. Target RTO is 15 minutes and RPO is 5 minutes.",
+    "negative": false
+  },
+  {
+    "id": "case-06-multidoc-escalation-and-network",
+    "category": "multi_document",
+    "query": "Who is the Lead Incident Commander and what is the proxy host used for external network traffic?",
+    "expected_filenames": ["enterprise_security_policy.txt", "cloud_infrastructure_v2.md"],
+    "reference_answer": "The Lead Incident Commander is Dr. Evelyn Vance, and external network traffic routes via proxy.corp.internal:3128.",
+    "negative": false
+  },
+  {
+    "id": "case-07-dense-keyword-standard",
+    "category": "dense_keyword_disagreement",
+    "query": "Under which ISO quality standard is the medical device sterilisation process validated?",
+    "expected_filenames": ["medical_device_safety.md"],
+    "reference_answer": "The sterilisation process is validated under standard ISO-11135 (Ethylene Oxide).",
+    "negative": false
+  },
+  {
+    "id": "case-08-conflicting-version-auth",
+    "category": "conflicting_version",
+    "query": "What is the active v2 authentication endpoint and what encryption does it replace from v1?",
+    "expected_filenames": ["legacy_migration_guide.md"],
+    "reference_answer": "The active v2 endpoint is /api/v2/oauth/token with AES-256-GCM, which replaces the deprecated v1 /api/v1/auth endpoint and DES-56 encryption.",
+    "negative": false
+  },
+  {
+    "id": "case-09-negative-quarterly-revenue",
+    "category": "negative_unanswerable",
+    "query": "What was the enterprise total quarterly revenue in Q3 2025?",
+    "expected_filenames": [],
+    "reference_answer": "The provided context does not contain information to answer this question.",
+    "negative": true
+  },
+  {
+    "id": "case-10-negative-unrelated-founder",
+    "category": "negative_unanswerable",
+    "query": "Who is the founder and CEO of Project Titan Hyperdrive?",
+    "expected_filenames": [],
+    "reference_answer": "The provided context does not contain information to answer this question.",
+    "negative": true
+  }
+]

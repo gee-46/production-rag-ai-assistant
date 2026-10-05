@@ -1,0 +1,17 @@
+ENTERPRISE CYBERSECURITY AND ACCESS CONTROL POLICY
+
+1. Authentication Standards
+All employee accounts require Multi-Factor Authentication (MFA) utilizing FIDO2 WebAuthn hardware keys or TOTP authenticators. Passwords must be at least 16 characters with high entropy. Session access tokens expire after 15 minutes, while refresh tokens expire after 7 days.
+
+2. Incident Escalation Protocol
+In the event of a suspected breach, the following escalation tiers apply:
+- Tier 1 (Low/Medium severity): Initial triage completed within 15 minutes.
+- Tier 2 (High severity): Incident Response Team activated within 1 hour.
+- Lead Incident Commander: Dr. Evelyn Vance (Office of Information Security).
+- Mandatory Regulatory Reporting: Applicable notifications must occur within 72 hours of confirmation.
+
+3. Data Classification Tiers
+- Public: Freely shareable external materials.
+- Internal: General internal business communications.
+- Confidential: Proprietary source code, customer records, and financial ledger data.
+- Restricted: Cryptographic private keys, root secrets, and unredacted PII.
