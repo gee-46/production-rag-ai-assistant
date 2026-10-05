@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ragdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies (sandbox-safe subset, no GPU model downloads in CI)
+        run: |
+          python -m pip install --upgrade pip
+          grep -v -E "^(torch|sentence-transformers|pytesseract|pdf2image)==" requirements.txt > requirements-ci.txt
+          pip install -r requirements-ci.txt
+          pip install ruff
+
+      - name: Lint
+        run: ruff check app tests
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/ragdb_test
+          EMBEDDING_PROVIDER: fake
+          LLM_PROVIDER: fake
+          RERANKER_PROVIDER: fake
+          SECRET_KEY: ci-test-secret
+        run: pytest -q --cov=app --cov-report=term-missing
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image (build-only, no push)
+        run: docker build -f docker/Dockerfile -t rag-platform:ci .
