@@ -1,367 +1,261 @@
+# Production RAG AI Assistant
 
-# RAG rebuilt phase 2
-> Building a Retrieval-Augmented Generation (RAG) system from scratch — focusing on **system design, control, reliability, and retrieval quality**
-
----
-
-## 🚀 Overview
-
-This project implements a **modular RAG pipeline** that enhances LLM responses using **external knowledge retrieval**.
-
-Instead of relying purely on pretrained knowledge, the system:
-
-- Retrieves relevant information from a document store
-- Grounds responses using retrieved context
-- Controls LLM output to reduce hallucination
-- Exposes the pipeline through a FastAPI backend
-- Supports dynamic document uploads without restarting the server
-- Persists vector embeddings across server restarts
-- Uses cross-encoder reranking for improved retrieval quality
+An enterprise-grade, production-ready Retrieval-Augmented Generation (RAG) backend featuring hybrid (dense vector + lexical full-text) retrieval, Reciprocal Rank Fusion (RRF), cross-encoder reranking, citation-grounded generation with Groq, automated groundedness verification, multi-tenant workspace RBAC, asynchronous background ingestion, and Prometheus observability — powered by FastAPI and PostgreSQL + pgvector.
 
 ---
 
-## 🎯 Objective
+## Architecture Overview
 
-To build an **industry-relevant AI system** that demonstrates:
-
-- End-to-end RAG architecture  
-- Clear separation of retrieval vs generation  
-- Controlled LLM behavior through prompt engineering  
-- Local + pluggable LLM backend  
-- API-based AI system deployment  
-- Dynamic knowledge ingestion pipelines  
-- Persistent vector database architecture  
-- Advanced retrieval engineering techniques  
-
----
-
-## 🧠 System Architecture
-
-```text
-Documents → Chunking → Embeddings → Vector Store → Retrieval → Reranking → Context → LLM → Answer
+```
+                          +------------------------------------------+
+                          |        Client / Frontend / API Docs       |
+                          +------------------------------------------+
+                                               |
+                                               v
+                          +------------------------------------------+
+                          |               FastAPI App                |
+                          |  - JWT Authentication + Bcrypt RBAC      |
+                          |  - Workspaces & Document-Level ACL       |
+                          |  - Synchronous & Streaming SSE Chat      |
+                          |  - Prometheus Metrics (/metrics)         |
+                          |  - Health Checks (/health)               |
+                          +------------------------------------------+
+                                     /                    \
+                     (Async Enqueue)/                      \(RAG Query)
+                                   v                        v
++------------------------------------+    +------------------------------------------+
+|  PostgreSQL Job Queue (SKIP LOCKED)|    |             RAG Orchestrator             |
++------------------------------------+    |                                          |
+                   |                      | 1. Query Embedding (all-MiniLM-L6-v2)    |
+                   v                      | 2. Hybrid Multi-Arm Retrieval:           |
++------------------------------------+    |    - Dense Vector Search (pgvector <=>)  |
+|     Background Ingestion Worker    |    |    - Lexical Search (Postgres tsvector)  |
+| - Text/PDF/DOCX Extraction + OCR   |    | 3. Reciprocal Rank Fusion (RRF, k=60)    |
+| - Token-Aware Chunker (300/50 tok) |    | 4. Cross-Encoder Reranking (ms-marco)    |
+| - Dense Embedding (384-dim)        |    | 5. Context Builder (Numbered Sources)    |
+| - Batch Postgres/pgvector Insert   |    | 6. Groq LLM Generation (llama-3.1-8b)    |
++------------------------------------+    | 7. Deterministic Citation Extraction [n] |
+                   |                      | 8. Lexical Groundedness Verification     |
+                   v                      +------------------------------------------+
++------------------------------------+                          |
+|    PostgreSQL 16 with pgvector     | <------------------------+
+|  - IVFFlat Cosine Distance Index   |
+|  - GIN Full-Text Search Index      |
+|  - Persistent Relational Data      |
++------------------------------------+
 ```
 
 ---
 
-## 🔄 Detailed Flow
+## Key Features
 
-```text
-Raw Documents / Uploaded Files
-              ↓
-Chunking (overlap-based)
-              ↓
-Embeddings (SentenceTransformers)
-              ↓
-FAISS Vector Store
-              ↓
-Persistent Storage
-              ↓
-User Query
-              ↓
-Query Embedding
-              ↓
-Top-K Retrieval
-              ↓
-Cross-Encoder Reranking
-              ↓
-Context Builder (Prompt Engineering)
-              ↓
-LLM (Ollama - LLaMA 3)
-              ↓
-Grounded Answer
-              ↓
-FastAPI JSON Response
-```
+1. **API-First Architecture**: FastAPI with automatic OpenAPI interactive documentation (`/docs`), request correlation IDs (`x-request-id`), structured logging, and unified exception handling.
+2. **Asynchronous Background Ingestion**: Uploads return `202 Accepted` immediately. Background worker processes poll PostgreSQL using `SELECT FOR UPDATE SKIP LOCKED` for reliable, lock-free queue concurrency.
+3. **Hybrid Retrieval**:
+   - **Dense Semantic Arm**: Cosine similarity (`<=>`) over 384-dimensional embeddings generated by `sentence-transformers/all-MiniLM-L6-v2`.
+   - **Lexical Keyword Arm**: PostgreSQL full-text search with `ts_rank_cd` and `tsvector` covering acronyms, exact IDs, and domain-specific terms.
+4. **Reciprocal Rank Fusion (RRF)**: Merges disparate dense and lexical ranking scores using rank positions ($k=60$) without requiring score normalization heuristics.
+5. **Cross-Encoder Reranking**: Re-evaluates fused candidate pairs using `cross-encoder/ms-marco-MiniLM-L-6-v2` for maximum precision.
+6. **Citation Grounding**: Enforces strict numbered source citations `[n]` in LLM output, parsing and returning only the exact chunks referenced by the model.
+7. **Groundedness & Anti-Hallucination Guardrails**: Real-time token overlap verification across answer sentences against cited context, with automated refusal detection for unanswerable/out-of-context questions.
+8. **Role-Based Access Control (RBAC)**: Workspace isolation with four hierarchical roles (`owner`, `admin`, `member`, `viewer`) and document visibility settings (`workspace` vs `private`).
+9. **Observability**: Built-in Prometheus metrics at `/metrics` tracking retrieval duration, LLM latency histograms, ungrounded answer counts, and ingestion rates.
 
 ---
 
-## ⚙️ Tech Stack
+## Prerequisites
 
-| Layer              | Technology                         |
-| ------------------ | ---------------------------------- |
-| Backend API        | FastAPI                            |
-| Backend Logic      | Python                             |
-| Embeddings         | SentenceTransformers               |
-| Vector Search      | FAISS                              |
-| Reranking          | CrossEncoder (MiniLM)              |
-| LLM Backend        | Ollama (LLaMA 3)                   |
-| Optional LLM       | OpenAI API                         |
-| File Upload        | python-multipart                   |
-| DOCX Parsing       | python-docx                        |
-| Data Handling      | NumPy                              |
+- **Docker Desktop** (with Docker Compose v2)
+- **Git**
+- **Groq API Key** (obtain free from [Groq Console](https://console.groq.com/))
+- *(Optional for bare-metal Python execution)*: Python 3.11+, PostgreSQL 16 with pgvector.
 
 ---
 
-## 🔥 Key Features
+## Quickstart with Docker (Recommended)
 
-### ✅ Semantic Retrieval
-
-- Converts text into dense vector embeddings
-- Enables meaning-based search instead of keyword matching
-
----
-
-### ✅ FAISS Vector Search
-
-- Efficient similarity search
-- Retrieves top-k relevant chunks
-
----
-
-### ✅ Document Chunking
-
-- Overlapping chunk strategy
-- Preserves context across splits
-- Improves retrieval accuracy
-
----
-
-### ✅ Context Engineering
-
-- Structured prompt design
-- Forces model to answer only from retrieved context
-- Reduces hallucination
-
----
-
-### ✅ Structured Output Control
-
-- Enforces bullet-point responses
-- Removes unnecessary verbosity
-- Produces concise and readable outputs
-
----
-
-### ✅ Local LLM Integration
-
-- Uses Ollama (LLaMA 3)
-- No API dependency
-- Fully offline inference capability
-
----
-
-### ✅ FastAPI Backend Integration
-
-- Exposes RAG pipeline through REST API
-- Supports query-based interaction using `/query`
-- Auto-generated Swagger documentation (`/docs`)
-- Returns structured JSON responses
-
----
-
-### ✅ Dynamic Document Upload (Day 8)
-
-- Upload `.txt` and `.docx` files dynamically
-- Automatically chunks uploaded content
-- Generates embeddings in real-time
-- Updates FAISS vector store live
-- Makes uploaded knowledge immediately searchable
-
----
-
-### ✅ Persistent Vector Storage (Day 9)
-
-- Saves FAISS vector index locally
-- Restores embeddings automatically on server restart
-- Preserves uploaded knowledge across sessions
-- Enables stateful retrieval architecture
-
----
-
-### ✅ Cross-Encoder Reranking (Day 10)
-
-- Implements two-stage retrieval architecture
-- Uses semantic reranking after FAISS retrieval
-- Improves chunk relevance and answer grounding
-- Reduces noisy retrieval results
-- Uses `cross-encoder/ms-marco-MiniLM-L-6-v2`
-
----
-
-## 🔍 Example Workflow
-
-```python
-Query: "What are advantages of RAG?"
-
-→ Embed query
-→ Retrieve candidate chunks
-→ Rerank retrieved chunks
-→ Build structured prompt
-→ Generate grounded answer
-→ Return API response
-```
-
----
-
-## 🌐 API Endpoints
-
-### GET `/`
-
-Health check endpoint.
-
-#### Response
-
-```json
-{
-  "message": "Production RAG API is running"
-}
-```
-
----
-
-### POST `/query`
-
-Query the RAG pipeline.
-
-#### Request
-
-```json
-{
-  "query": "What are advantages of RAG?"
-}
-```
-
-#### Response
-
-```json
-{
-  "query": "What are advantages of RAG?",
-  "answer": "• Reduces hallucinations\n• Enables domain-specific knowledge\n• Keeps information up-to-date without retraining\n• Improves factual accuracy",
-  "retrieved_chunks": [...]
-}
-```
-
----
-
-### POST `/upload`
-
-Upload `.txt` or `.docx` documents dynamically.
-
-#### Response
-
-```json
-{
-  "filename": "document.docx",
-  "chunks_added": 5,
-  "message": "Document uploaded successfully"
-}
-```
-
----
-
-## 🧪 Current Capabilities
-
-- Context-grounded answering
-- Reduced hallucination
-- Structured and controlled outputs
-- Local LLM inference
-- API-based interaction
-- Dynamic document ingestion
-- Persistent vector database
-- Live vector store updates
-- Cross-encoder reranked retrieval
-- Two-stage retrieval pipeline
-- Modular and extensible architecture
-
----
-
-## ⚠️ Current Limitations
-
-- No metadata-aware reranking yet
-- Basic chunking strategy
-- No authentication layer
-- No evaluation metrics
-- Supports only `.txt` and `.docx` uploads currently
-- No metadata-based filtering yet
-
----
-
-## 🚧 Roadmap
-
-- [ ] Semantic / recursive chunking
-- [x] Cross-encoder reranking
-- [x] Persistent FAISS storage
-- [ ] PDF support
-- [ ] Metadata filtering
-- [ ] Evaluation metrics (precision@k, latency)
-- [ ] Docker deployment
-- [ ] Cloud deployment
-
----
-
-## 📂 Project Structure
-
+### 1. Configure Environment Variables
+Copy the template configuration and set your secrets:
 ```bash
-rag-system/
-│
-├── app/
-│   ├── main.py
-│   │
-│   └── services/
-│       ├── embeddings.py
-│       ├── loader.py
-│       ├── vector_store.py
-│       ├── chunker.py
-│       ├── context_builder.py
-│       ├── reranker.py
-│       └── llm.py
-│
-├── data/
-│   └── raw_docs/
-│
-├── storage/
-│   ├── faiss_index.bin
-│   └── texts.pkl
-│
-├── test_pipeline.py
-├── requirements.txt
-├── .gitignore
-└── README.md
+cp .env.example .env
+```
+Open `.env` and set your `GROQ_API_KEY`:
+```env
+ENVIRONMENT=development
+LOG_LEVEL=INFO
+LOG_JSON=false
+
+SECRET_KEY=generate-a-secure-random-string-here
+
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ragdb
+
+EMBEDDING_PROVIDER=sentence_transformers
+EMBEDDING_MODEL=all-MiniLM-L6-v2
+EMBEDDING_DIM=384
+
+LLM_PROVIDER=groq
+LLM_MODEL=llama-3.1-8b-instant
+GROQ_API_KEY=your_actual_groq_api_key_here
+
+CHUNK_TARGET_TOKENS=300
+CHUNK_OVERLAP_TOKENS=50
+VECTOR_TOP_K=20
+KEYWORD_TOP_K=20
+RERANK_TOP_K=5
+```
+
+> [!WARNING]
+> **Security Warning**: Never commit `.env` or real API keys to version control. The `.gitignore` file is configured to exclude `.env` automatically.
+
+### 2. Build and Start the Stack
+Run the following command from the repository root:
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+This automatically boots:
+- `db`: PostgreSQL 16 with the `pgvector` extension.
+- `migrate`: Runs Alembic migrations (`alembic upgrade head`) to initialize schemas and indices.
+- `api`: FastAPI application exposed on `http://localhost:8000`.
+- `worker`: Background ingestion daemon polling for document processing jobs.
+
+---
+
+## Verification & Endpoints
+
+| Service / Interface | URL | Description |
+|---|---|---|
+| **Streamlit Web UI** | `http://localhost:8501/` | Interactive lightweight Python UI with streaming chat, citations & metrics |
+| **API Root** | `http://localhost:8000/` | Service banner & metadata |
+| **Health Check** | `http://localhost:8000/health` | Service and database connectivity status |
+| **Interactive API Docs** | `http://localhost:8000/docs` | Swagger UI for exploring and executing endpoints |
+| **OpenAPI Specification** | `http://localhost:8000/openapi.json` | Raw OpenAPI JSON schema |
+| **Prometheus Metrics** | `http://localhost:8000/metrics` | Real-time Prometheus latency & counter metrics |
+
+---
+
+## Python Web Frontend (Streamlit)
+
+A modern, lightweight Python web interface is included out-of-the-box with **instant direct access (no login required)**:
+- ⚡ **Direct Dashboard Landing**: Opens straight to the RAG workspace without mandatory login or registration.
+- 💬 **Interactive RAG Chat**: Real-time token streaming, session management, and quick demo prompt chips.
+- 📚 **Citation & Evidence Inspector**: Inspect exact source chunks, relevance scores, and document origins.
+- 🛡️ **Groundedness & Anti-Hallucination Guardrails**: Real-time verification badges (100% Grounded vs Refusal vs Flagged sentences).
+- 📁 **Document Ingestion Hub**: Drag-and-drop file upload (`.pdf`, `.docx`, `.md`, `.txt`) with live status tracking.
+- 🏢 **Workspace Switcher**: Easily switch between or create dedicated knowledge bases.
+- 🧪 **Golden QA Evaluation Runner**: One-click benchmark runner displaying Precision@k, Recall@k, MRR, and Groundedness rates.
+- 📈 **System Observability Dashboard**: Scrape and visualize Prometheus telemetry, request throughput, and retrieval latencies.
+
+### Authentication Configuration (`AUTH_ENABLED`):
+- **`AUTH_ENABLED=false` (Default for local demo)**: Enables frictionless, direct access without mandatory login.
+- **`AUTH_ENABLED=true`**: Enforces strict JWT token authentication and workspace RBAC policies for enterprise deployments.
+
+
+### Launching the Frontend:
+
+**Option 1: Quick CLI Launcher (Recommended)**
+```bash
+python run_frontend.py
+```
+*(Optionally specify `--port 8501` and `--api-url http://localhost:8000`)*
+
+**Option 2: Direct Streamlit command**
+```bash
+streamlit run frontend/dashboard.py
+```
+
+**Option 3: Full Docker Compose Stack**
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+The Streamlit UI will be available immediately at **`http://localhost:8501`**.
+
+
+---
+
+## End-to-End Walkthrough (Demo Flow)
+
+1. **Register & Authenticate**:
+   - `POST /auth/register`: Create user account (`email`, `password`, `full_name`).
+   - `POST /auth/login`: Receive JWT access token.
+   - Click **Authorize** in Swagger (`http://localhost:8000/docs`) and enter `Bearer <YOUR_TOKEN>`.
+2. **Create Workspace**:
+   - `POST /workspaces`: Create a workspace (e.g. `{"name": "Production Architecture"}`). Note the returned `id`.
+3. **Upload Document**:
+   - `POST /workspaces/{workspace_id}/documents`: Upload `data/demo_architecture.md`.
+   - Returns `202 Accepted` with a `job_id`. Watch the worker logs process extraction, chunking, embedding, and indexing.
+   - `GET /workspaces/{workspace_id}/documents/{document_id}`: Verify document status becomes `ready` with `chunk_count >= 1`.
+4. **Execute RAG Chat Query**:
+   - `POST /workspaces/{workspace_id}/chat`:
+     ```json
+     {
+       "query": "What retrieval strategy does this system use?"
+     }
+     ```
+   - Inspect the response containing the synthesized answer, parsed citations (`[1]`), groundedness verification (`supported: true`), and retrieval candidate diagnostics.
+5. **Test Hallucination / Negative Guardrail**:
+   - `POST /workspaces/{workspace_id}/chat`:
+     ```json
+     {
+       "query": "What was the company revenue in 2025?"
+     }
+     ```
+   - The model explicitly declines to hallucinate, and the groundedness guardrail verifies the refusal.
+6. **Streaming SSE Chat**:
+   - `POST /workspaces/{workspace_id}/chat/stream`: Stream answer tokens via Server-Sent Events with session history preservation.
+
+---
+
+## Running Automated Tests
+
+Run the test suite using pytest:
+```bash
+pytest tests/unit -v
+```
+
+To run the full suite including integration tests against PostgreSQL:
+```bash
+pytest -v --cov=app
 ```
 
 ---
 
-## 🧠 Engineering Highlights
+## Project Structure
 
-- Built without LangChain to understand system internals
-- Explicit separation of retrieval vs generation
-- Focused on LLM reliability and retrieval quality
-- API-first backend architecture
-- Dynamic runtime ingestion support
-- Persistent vector database design
-- Implemented two-stage retrieval (FAISS + CrossEncoder)
-- Designed for extensibility and production transition
-
----
-
-## 📌 Status
-
-🚧 Actively under development  
-📅 Daily iterative improvements and feature additions
-
----
-
-## 🏆 Current Achievements
-
-- Built a modular end-to-end RAG pipeline
-- Implemented semantic vector retrieval using FAISS
-- Added dynamic document upload support
-- Added persistent vector database storage
-- Integrated local LLM inference using Ollama
-- Implemented prompt-controlled grounded generation
-- Added production-style reranking architecture
-- Built a REST API backend using FastAPI
-- Designed the system without LangChain abstraction
-
----
-
-## 🤝 Connect
-
-- GitHub: https://github.com/gee-46
-- LinkedIn: https://www.linkedin.com/in/gautam-n-chipkar-348b092a5/
+```
+production-rag-ai-assistant/
+├── alembic/                 # Database migrations (Postgres + pgvector + tsvector)
+├── app/
+│   ├── api/                 # FastAPI routes (auth, workspaces, documents, chat, health, metrics)
+│   ├── core/                # Configuration (pydantic-settings), security, logging, metrics
+│   ├── db/                  # SQLAlchemy session & declarative base
+│   ├── models/              # Database models (User, Workspace, Document, Chunk, Job, Message)
+│   ├── schemas/             # Pydantic request/response schemas
+│   └── services/
+│       ├── chunking/        # Token-aware paragraph & sentence chunker with overlap
+│       ├── embeddings/      # Sentence Transformers (all-MiniLM-L6-v2) & OpenAI providers
+│       ├── evaluation/      # Golden QA evaluation harness & precision/recall/MRR metrics
+│       ├── ingestion/       # Text, DOCX, and PDF/OCR extraction pipeline
+│       ├── jobs/            # Postgres SKIP LOCKED job queue & worker daemon
+│       ├── llm/             # Groq, OpenAI, Anthropic, Ollama, and test providers
+│       ├── rag/             # Orchestrator, context builder, citation extractor, hallucination checker
+│       └── retrieval/       # Dense vector search, Postgres keyword search, RRF fusion, reranker
+├── data/                    # Sample & demo documents (data/demo_architecture.md)
+├── docker/
+│   ├── Dockerfile           # Multi-stage production container definition
+│   └── docker-compose.yml   # Multi-service stack (db, migrate, api, worker, volumes)
+├── docs/
+│   └── DEMO.md              # 60-90 second LinkedIn demo presentation script
+├── eval/                    # Golden QA dataset for retrieval evaluation
+├── tests/                   # Unit and integration test suites
+├── .env.example             # Environment variable template
+├── pyproject.toml           # Tooling & linter configuration
+└── requirements.txt         # Pinned production Python dependencies
+```
 
 ---
 
-## ⭐ Support
+## Troubleshooting
 
-If you find this useful, consider starring the repo.
+- **`GROQ_API_KEY missing`**: Set a valid API key in `.env` or set `LLM_PROVIDER=fake` / `LLM_PROVIDER=ollama` for local testing.
+- **Port 5432 or 8000 already in use**: Adjust port mappings in `docker/docker-compose.yml` or stop conflicting local services.
+- **Model Download Times**: Embedding and cross-encoder models are cached in Docker named volume `hf_cache` so downloads happen only on the initial container run.

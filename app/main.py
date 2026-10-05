@@ -1,207 +1,89 @@
-from fastapi import FastAPI, UploadFile, File
-from pydantic import BaseModel
-from docx import Document
-
-from app.services.reranker import rerank
-from app.services.loader import load_documents
-from app.services.embeddings import get_embedding
-from app.services.vector_store import VectorStore
-from app.services.chunker import chunk_text
-from app.services.context_builder import build_prompt
-from app.services.llm import generate_answer
-
-
-# -----------------------------
-# FastAPI App Initialization
-# -----------------------------
-
-app = FastAPI(
-    title="Production RAG API",
-    description="Retrieval-Augmented Generation system using FAISS + Ollama",
-    version="1.0"
-)
-
-
-# -----------------------------
-# Load and Prepare Documents
-# -----------------------------
-
-docs = load_documents("data/raw_docs")
-
-all_chunks = []
-
-for doc in docs:
-
-    chunks = chunk_text(doc)
-
-    all_chunks.extend(chunks)
-
-print(f"\nTotal chunks loaded: {len(all_chunks)}")
-
-
-# -----------------------------
-# Generate Embeddings
-# -----------------------------
-
-embeddings = [get_embedding(chunk) for chunk in all_chunks]
-
-
-# -----------------------------
-# Create / Load Vector Store
-# -----------------------------
-
-vector_store = VectorStore(dim=len(embeddings[0]))
-
-loaded = vector_store.load()
-
-if not loaded:
-
-    print("Creating new vector store...")
-
-    vector_store.add(embeddings, all_chunks)
-
-    vector_store.save()
-
-else:
-
-    print("Using existing saved vector store.")
-
-
-# -----------------------------
-# Request Schema
-# -----------------------------
-
-class QueryRequest(BaseModel):
-
-    query: str
-
-
-# -----------------------------
-# Root Endpoint
-# -----------------------------
-
-@app.get("/")
-def home():
-
-    return {
-        "message": "Production RAG API is running"
-    }
-
-
-# -----------------------------
-# Query Endpoint
-# -----------------------------
-
-@app.post("/query")
-def query_rag(request: QueryRequest):
-
-    print(f"\nUser Query: {request.query}")
-
-    # Convert query into embedding
-    query_embedding = get_embedding(request.query)
-
-    # Retrieve candidate chunks
-    results = vector_store.search(query_embedding, k=10)
-
-    print("Applying semantic reranking...")
-
-    # Rerank chunks
-    results = rerank(request.query, results, top_k=3)
-
-    print("\nRetrieved Chunks:\n")
-
-    for i, chunk in enumerate(results, start=1):
-
-        print(f"{i}. {chunk[:200]}\n")
-
-    # Build prompt using retrieved chunks
-    prompt = build_prompt(results, request.query)
-
-    print("Generating grounded response...")
-
-    # Generate grounded answer
-    answer = generate_answer(prompt)
-
-    return {
-        "query": request.query,
-        "answer": answer,
-        "retrieved_chunks": results
-    }
-
-
-# -----------------------------
-# Upload Endpoint
-# -----------------------------
-
-@app.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
-
-    print(f"\nUploaded File: {file.filename}")
-
-    # -----------------------------
-    # Handle TXT Files
-    # -----------------------------
-
-    if file.filename.endswith(".txt"):
-
-        content = await file.read()
-
-        text = content.decode("utf-8")
-
-    # -----------------------------
-    # Handle DOCX Files
-    # -----------------------------
-
-    elif file.filename.endswith(".docx"):
-
-        temp_content = await file.read()
-
-        with open("temp.docx", "wb") as f:
-
-            f.write(temp_content)
-
-        doc = Document("temp.docx")
-
-        text = "\n".join(
-            [para.text for para in doc.paragraphs]
-        )
-
-    else:
-
-        return {
-            "error": "Only .txt and .docx files are supported"
-        }
-
-    # -----------------------------
-    # Chunk Text
-    # -----------------------------
-
-    chunks = chunk_text(text)
-
-    print(f"Generated {len(chunks)} chunks")
-
-    # -----------------------------
-    # Generate Embeddings
-    # -----------------------------
-
-    embeddings = [
-        get_embedding(chunk)
-        for chunk in chunks
-    ]
-
-    # -----------------------------
-    # Update Vector Store
-    # -----------------------------
-
-    vector_store.add(embeddings, chunks)
-
-    # Save updated vector database
-    vector_store.save()
-
-    print("Document added to vector store.")
-
-    return {
-        "filename": file.filename,
-        "chunks_added": len(chunks),
-        "message": "Document uploaded successfully"
-    t}
+"""
+Application entrypoint.
+
+Unlike the old main.py — which built the vector store, loaded the embedding
+model, and embedded every document as module-level code executed at import
+time — nothing heavy happens here at import time. Startup work happens in
+the `lifespan` context, which FastAPI runs once when the app actually
+starts serving, not merely when the module is imported (e.g. by a test or
+by Alembic). The app can boot and answer /health even with zero documents,
+no GPU, or a cold model cache.
+"""
+from __future__ import annotations
+
+import time
+import uuid
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routers import auth, chat, documents, evaluation, health, workspaces
+from app.api.routers import metrics as metrics_router
+from app.core.config import get_settings
+from app.core.errors import register_exception_handlers
+from app.core.logging import configure_logging, get_logger, request_id_var
+from app.core.metrics import HTTP_REQUEST_DURATION_SECONDS, HTTP_REQUESTS_TOTAL
+
+logger = get_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = get_settings()
+    configure_logging(settings.log_level, settings.log_json)
+    logger.info(
+        "app_starting environment=%s llm_provider=%s embedding_provider=%s",
+        settings.environment, settings.llm_provider, settings.embedding_provider,
+    )
+    yield
+    logger.info("app_shutting_down")
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    app = FastAPI(
+        title=settings.app_name,
+        version="1.0.0",
+        lifespan=lifespan,
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"] if settings.environment != "production" else [],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.middleware("http")
+    async def request_context_middleware(request: Request, call_next):
+        req_id = request.headers.get("x-request-id", str(uuid.uuid4()))
+        token = request_id_var.set(req_id)
+        start = time.perf_counter()
+        try:
+            response = await call_next(request)
+        finally:
+            request_id_var.reset(token)
+        duration = time.perf_counter() - start
+        route = request.scope.get("route")
+        route_path = route.path if route else request.url.path
+        HTTP_REQUESTS_TOTAL.labels(request.method, route_path, response.status_code).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(request.method, route_path).observe(duration)
+        response.headers["x-request-id"] = req_id
+        return response
+
+    register_exception_handlers(app)
+
+    app.include_router(health.router)
+    app.include_router(metrics_router.router)
+    app.include_router(auth.router)
+    app.include_router(workspaces.router)
+    app.include_router(documents.router)
+    app.include_router(chat.router)
+    app.include_router(evaluation.router)
+
+    return app
+
+
+app = create_app()
